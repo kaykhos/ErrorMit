@@ -11,39 +11,31 @@ import numpy as np
 import scipy as sp
 import copy
 import pdb
-import cross_fidelity as cf
+import qiskit_based as qb
 
 
-# Set up backend executor
-backend = qk.Aer.get_backend('qasm_simulator')
-instance = qk.utils.QuantumInstance(backend, 
-                                    shots=2**13, 
-                                    optimization_level=0)
-
-# Create some circuit (Replace with Trotterised H-model)
 nb_qubits = 7
+
+# Create circuit
 circ1 = qk.QuantumCircuit(qk.QuantumRegister(nb_qubits, 'regs_1'), name='circ1')
-for qq in range(nb_qubits):
-    circ1.rx(0,qq)
-circ1.barrier()
+# Trotterised TFIM (defaults used)
+circ1 = qb.TFIMandLF(circ1, steps=2)
   
 
-# Append random unitaries from the cf function
-circuits = cf.append_random_unitaries(circ1, 
-                            nb_random=400,
-                            seed=42)
-
-
-
-results = instance.execute(circuits=circuits)
+# Append random unitaries and get results obj
+circuits = qb.append_random_unitaries(circ1, 
+                                      nb_random=10,
+                                      seed=42)
+# run circuit to get results (default qasm simulator)
+results = qb.Simulator().execute(circuits=circuits)
 
 # Find Tr[rho^2] via slicing sets
-subsets_entropiesLST = cf.subsets_entropies(results,
-                                         start_end_sets=[[0,2], [2,6]])
+subsets_entropiesLST = qb.subsets_entropies(results,
+                                            start_end_sets=[[0,2], [2,6]])
 
-# Find Tr[rho^2] via explicit indexes (should be same as above)
-subsets_entropiesIDX = cf.subsets_entropies(results,
-                                         qubit_index_sets=[[0,1],
-                                                           [2,3,4,5]])
+# Find Tr[rho^2] via explicit indexes (should be same as above - just testing)
+subsets_entropiesIDX = qb.subsets_entropies(results,
+                                            qubit_index_sets=[[0,1],
+                                                              [2,3,4,5]])
 
 

@@ -437,9 +437,52 @@ def subsets_entropies(results1,
 #%% From joe (TFIM qiskit circuit)
 
 
-from qiskit import execute, IBMQ
 
-def TFIMandLF(circuit,L,qr,J,hx,hz,dt,steps):
+def TFIMandLF(circuit,
+              hx = 0.5,
+              hz = 0.5,
+              J = 1,
+              steps = 5,
+              time = 1,
+              dt = None,
+              L = None,
+              qr = None):
+    """
+    
+
+    Parameters
+    ----------
+    circuit : Quantum circuit to operate on
+        DESCRIPTION.
+    hx : X-field
+        DESCRIPTION. The default is 0.5.
+    hz : Z-field
+        DESCRIPTION. The default is 0.5.
+    J : ZZ rate
+        DESCRIPTION. The default is 1.
+    steps : total steps (trotter)
+        DESCRIPTION. The default is 5.
+    time : total time
+        DESCRIPTION. The default is 1.
+    dt : can spesift, else dt = time/steps
+        DESCRIPTION. The default is None.
+    L : can spesify number of qubits (else taken from circuit obj)
+        DESCRIPTION. The default is None.
+    qr : Can spesify named set of quantum registers (else taken from circuit)
+        DESCRIPTION. The default is None.
+
+    Returns
+    -------
+    circuit update (acts in place anyway)
+
+    """
+    if not L:
+        L = circuit.num_qubits
+    if not qr:
+        qr = circuit.qregs[0]
+    if not dt:
+        dt = time / steps
+    
 
     sites = range(L)
     order = []
@@ -460,6 +503,18 @@ def TFIMandLF(circuit,L,qr,J,hx,hz,dt,steps):
 
         for i in sites:
             circuit.rx(hx*dt,qr[i])
+    return circuit
+
+
+def Simulator(name = 'qasm_simulator',
+              shots = 2**13,
+              optimization_level = 0):
+    backend = qk.Aer.get_backend(name=name)
+    instance = qk.utils.QuantumInstance(backend=backend, 
+                                        shots=shots, 
+                                        optimization_level=optimization_level)
+    return instance
+
 
 
 #%% Example of how to use this: very basic example
