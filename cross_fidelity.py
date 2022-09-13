@@ -434,6 +434,33 @@ def subsets_entropies(results1,
 
 
 
+#%% From joe (TFIM qiskit circuit)
+
+
+from qiskit import execute, IBMQ
+
+def TFIMandLF(circuit,L,qr,J,hx,hz,dt,steps):
+
+    sites = range(L)
+    order = []
+    for i in sites:
+        if i % 2 == 0 and i < L-1:
+            order.append(i)
+    for i in sites:
+        if i % 2 != 0 and i and i < L-1:
+            order.append(i)
+
+    for j in range(steps):
+        for i in sites:
+            circuit.rx(hx*dt,qr[i])
+            circuit.rz(2*hz*dt,qr[i])
+
+        for k in order:
+            circuit.rzz(2*J*dt,qr[k],qr[k+1])
+
+        for i in sites:
+            circuit.rx(hx*dt,qr[i])
+
 
 #%% Example of how to use this: very basic example
     
