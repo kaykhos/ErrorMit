@@ -208,9 +208,14 @@ class SpinChainInitailState_Z:
 # A function to calculate the purity dynamics given a chain length, N, an Ising coupling strngth, J, a
 # transverese field strength, hx, a max time, t_max and a set of patches
 
-def patch_entropies(N,J,hx,t_max,Patches):
+def patch_entropies(N,
+                    Patches,
+                    J = 1,
+                    hx = 0.5,
+                    t_max = 1,
+                    steps = 10):
 
-    state = [0,0,0,0,0,0,0,0]
+    state = [0]*N
 
     # define the patches we are measuring.
     Patch_Basis = []
@@ -218,7 +223,8 @@ def patch_entropies(N,J,hx,t_max,Patches):
         Patch_Basis.append(subspace_basis(N,patch))
 
     # Times we will consider.
-    dt = 0.1
+    
+    dt = t_max / steps
     times = np.arange(0,t_max+dt,dt)
 
     # Define Hamiltonian.

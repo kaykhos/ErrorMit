@@ -448,8 +448,6 @@ def TFIMandLF(circuit,
               L = None,
               qr = None):
     """
-    
-
     Parameters
     ----------
     circuit : Quantum circuit to operate on
@@ -509,6 +507,7 @@ def TFIMandLF(circuit,
 def Simulator(name = 'qasm_simulator',
               shots = 2**13,
               optimization_level = 0):
+    """ Returns a quantum instance simulator"""
     backend = qk.Aer.get_backend(name=name)
     instance = qk.utils.QuantumInstance(backend=backend, 
                                         shots=shots, 
@@ -516,6 +515,67 @@ def Simulator(name = 'qasm_simulator',
     return instance
 
 
+
+def patch_entropies(N,
+                    Patches,
+                    J = 1,
+                    hx = 0.5,
+                    t_max = 1,
+                    steps = 10,
+                    trotter_steps = 5,
+                    nb_random = 20,
+                    seed = 42):
+    """
+    Wrappre to be similar to Joe's scipy_entropy.patch_entropies code
+
+    Parameters
+    ----------
+    N : qubit count
+    Patches : patch indexes
+    J : ZZ for ising chain
+        DESCRIPTION. The default is 1.
+    hx : X_field
+        DESCRIPTION. The default is 0.5.
+    t_max : max time (for output plots)
+        DESCRIPTION. The default is 1.
+    steps : steps for the final plots
+        DESCRIPTION. The default is 10.
+    trotter_steps : for the qiskit circuit
+        DESCRIPTION. The default is 5.
+    nb_random : Harr random circuit samples
+        DESCRIPTION. The default is 20.
+    seed : Harr random see
+        DESCRIPTION. The default is 42.
+
+    tVec, entropies (for each patch)
+    -------
+    """
+    tVec = [0]
+    entropy_array = [[1]*len(Patches)]
+    for ct in range(steps):
+        time = t_max / steps * (ct + 1)
+        tVec.append(time)
+        
+        # Make circuit
+        qc = qk.QuantumCircuit(qk.QuantumRegister(N, 'regs_1'), name='circ1')
+        qc = TFIMandLF(qc, 
+                       steps=trotter_steps,
+                       J=J,
+                       hx=hx,
+                       time=time)
+        # Add Harr random circs + simulate results
+        circuits = append_random_unitaries(qc,
+                                           nb_random=nb_random,
+                                           seed=seed)
+        results = Simulator().execute(circuits=circuits)
+        # Calc entropy patches
+        subsets_entropiesIDX = subsets_entropies(results,
+                                                 qubit_index_sets=Patches)
+        entropy_array.append(subsets_entropiesIDX)
+    return np.array(tVec), np.array(entropy_array)
+        
+
+    
 
 #%% Example of how to use this: very basic example
     
