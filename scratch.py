@@ -67,17 +67,6 @@ hx = -0.5 #transverese field strength
 t_max = 5 #max time
 Patches = [list(range(tt[0], tt[1])) for tt in start_end_sets]
 
-times, results = se.patch_entropies(N = N,
-                                    Patches = Patches,
-                                    t_max = 5,
-                                    steps = 30,
-                                    J = J,
-                                    hx = hx)   # returns the times and the purities for the patches.
-
-plt.plot(times, results)
-plt.legend(Patches)
-plt.title('Exact purities on patches (symetery = doubeled up)')
-plt.show()
 
 
 
@@ -88,11 +77,44 @@ tVec, entropies = qe.patch_entropies(N,
                                      J=J, 
                                      hx=hx,
                                      t_max=t_max,
-                                     steps=30,
-                                     trotter_steps=5,
+                                     steps=15,
+                                     trotter_steps=20,
                                      nb_random=400,
                                      seed=42)
 plt.plot(tVec, entropies)
 plt.legend(Patches)
 plt.title('Measuered purity on patches')
+plt.show()
+
+
+#%% Reduced DM from circuit
+
+tVec, entropies5 = qe.circuit_patch_entropies(N,
+                                             Patches,
+                                             J=J,
+                                             hx=hx,
+                                             t_max=t_max,
+                                             steps=15,
+                                             trotter_steps=7)
+tVec, entropies15 = qe.circuit_patch_entropies(N,
+                                             Patches,
+                                             J=J,
+                                             hx=hx,
+                                             t_max=t_max,
+                                             steps=15,
+                                             trotter_steps=20)
+times, results = se.patch_entropies(N=N,
+                                    Patches=Patches,
+                                    t_max=t_max,
+                                    steps=30,
+                                    J=J,
+                                    hx=hx)   # returns the times and the purities for the patches.
+
+plt.plot(times, results, alpha = 0.75)
+plt.plot(tVec, entropies5, 'd', alpha = 0.5)
+plt.plot(tVec, entropies15, '.', alpha = 0.5)
+plt.plot(tVec, entropies, '*', alpha = 1)
+
+plt.legend(Patches)
+plt.title('Measuered purity on patches (7-20 Trotters)')
 plt.show()

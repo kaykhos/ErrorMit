@@ -439,8 +439,8 @@ def subsets_entropies(results1,
 
 
 def TFIMandLF(circuit,
-              hx = 0.5,
-              hz = 0.5,
+              hx = 0,
+              hz = 0,
               J = 1,
               steps = 5,
               time = 1,
@@ -562,6 +562,7 @@ def patch_entropies(N,
                        steps=trotter_steps,
                        J=J,
                        hx=hx,
+                       hz=0,
                        time=time)
         # Add Harr random circs + simulate results
         circuits = append_random_unitaries(qc,
@@ -575,130 +576,94 @@ def patch_entropies(N,
     return np.array(tVec), np.array(entropy_array)
         
 
-    
+#%% using state vector to purity inc. trotter error
 
-#%% Example of how to use this: very basic example
+def _exact_circuit_purity_helper(circuit, Patches,
+                       include = True):
+    """
+    Uses statevector to calculate reduced DM for a given circuit
+
+    Parameters
+    ----------
+    circuit : TYPE
+    Patches : TYPE
+    include : (include or exclude patches)
+
+    Returns
+    -------
+    entropy_array : tr[rho^2] for each patch
+
+    """
+    if include:
+        nb_qubits = circuit.num_qubits
+        complete = set(range(nb_qubits))
+        trace_over = []
+        for ct in range(len(Patches)):
+            trace_over.append(list(complete.difference(set(Patches[ct]))))
+    else:
+        trace_over = Patches
     
     
-if __name__ == '__main__':
-    provider_free = qk.IBMQ.load_account()
-    # Define simple circuit
-    backend = provider_free.get_backend('ibmq_qasm_simulator')
-    # backend = qk.Aer.aer.get_backend('qasm_simulator')
-    instance = qk.utils.QuantumInstance(backend, shots=8000, optimization_level=3)
+    sv = qk.quantum_info.DensityMatrix(circuit)
+    entropy_array = []
+    for pp in trace_over:
+        rho = np.array(qk.quantum_info.partial_trace(sv, pp))
+        entropy_array.append(np.trace(rho@ rho).real)
+    return entropy_array
+
+
+def circuit_patch_entropies(N,
+                           Patches,
+                           J = 1,
+                           hx = 0,
+                           t_max = 1,
+                           steps = 10,
+                           trotter_steps = 5):
+    """
+    Trotterised DM purities for given patches
+
+    Parameters
+    ----------
+    N : TYPE
+        DESCRIPTION.
+    Patches : TYPE
+        DESCRIPTION.
+    J : TYPE, optional
+        DESCRIPTION. The default is 1.
+    hx : TYPE, optional
+        DESCRIPTION. The default is 0.5.
+    t_max : TYPE, optional
+        DESCRIPTION. The default is 1.
+    steps : TYPE, optional
+        DESCRIPTION. The default is 10.
+    trotter_steps : TYPE, optional
+        DESCRIPTION. The default is 5.
+    nb_random : TYPE, optional
+        DESCRIPTION. The default is 20.
+    seed : TYPE, optional
+        DESCRIPTION. The default is 42.
+
+    Returns
+    -------
+    Array of patches
+    """
+    tVec = [0]
+    er = [[1]*len(Patches)]
+    for ct in range(steps):
+        time = t_max / steps * (ct + 1)
+        tVec.append(time)
         
+        # Make circuit
+        qc = qk.QuantumCircuit(qk.QuantumRegister(N, 'regs_1'), name='circ1')
+        qc = TFIMandLF(qc, 
+                       steps=trotter_steps,
+                       J=J,
+                       hx=hx,
+                       hz=0,
+                       time=time)
+        tmp = _exact_circuit_purity_helper(qc, 
+                                           Patches=Patches,
+                                           include=True)
+        er.append(tmp)
     
-    # Create two circuits that have cross F = 0
-    circ1 = qk.QuantumCircuit(qk.QuantumRegister(8, 'regs_1'), name='circ1')
-    for qq in range(8):
-        circ1.rx(pi,qq)
-    circ1.barrier()
-    
-    circ2 = qk.QuantumCircuit(qk.QuantumRegister(8, 'regs_1'), name='circ2')
-    circ2.barrier()
-
-    
-    # Append random measurements in two ways
-    #   1 each circuit independently
-    nb_random = 100
-    circ1m = append_random_unitaries(circ1, seed=10, nb_random = nb_random)
-    circ2m = append_random_unitaries(circ2, seed=10, nb_random = nb_random)
-    print(circ1m[0].name)
-    print(circ1m[0].decompose())
-    print(circ2m[0].name)
-    print(circ2m[0].decompose())
-    
-    #   2 Or combine them into a single job (here same circuits)
-    circ_all_m = append_random_unitaries([circ1, circ2], 
-                                         seed=10, 
-                                         nb_random = nb_random)
-    
-    # Also ensures right params at right points
-    print(circ_all_m[0].name)
-    print(circ_all_m[0].decompose())
-    print(circ_all_m[5].name)
-    print(circ_all_m[5].decompose())
-    
-    # note circuits now have different names:
-    _print_names(circ1m);print()
-    _print_names(circ2m);print()
-    _print_names(circ_all_m);print()
-    
-    
-    # run simulations
-    try:
-        res1
-    except:
-        res1 = instance.execute(circ1m)
-        res2 = instance.execute(circ2m)
-        res_all = instance.execute(circ_all_m)
-        
-    # If you used append_random_unitaries() to create the circuts, you don't need
-    #   to worry about options (as long as same seed)
-    
-    # For different results objects
-    F = cross_fidelity([res1, res1])
-    print("CF from 2 qobj's (circ1 agains itsself): F = {}".format(F))
-    
-    # For the same res object, define circs be name
-    F = cross_fidelity(res_all, prefix1='circ1', prefix2='circ2')
-    print('CF from 1 qobj different namded circs in same job: F = {}'.format(F))
-    
-    # Or by place in list
-    F = cross_fidelity(res_all, unitary_block1=range(5), unitary_block2=range(5,10))
-    print("CF from 1 obj by list instead of names: F = {}".format(F))
-    
-    
-    # Compare res object with saved result.to_dict()
-    res1_dict = res1.to_dict()
-    F = cross_fidelity([res1_dict, res2])
-    print("CF between dict(1) and res object(2): F = {}".format(F))
-    
-    # Can also compare any and all parts:
-    # compare res1 itsself from circs_all
-    F = cross_fidelity([res1_dict, res_all], prefix2='circ1')
-    print("CF between circ1 in res_all and circ1 in res1: F = {}".format(F))
-    # Note, because of shot noise F's above will be differenct
-    
-    
-    # Test the exact state overlap (seems to be a max of ~0.92ish)
-    ls1 = [res1.get_counts(ii) for ii in range(len(res1.results))]
-    ls2 = [res2.get_counts(ii) for ii in range(len(res2.results))]
-    
-    # Looking at overlaps exactly
-    dm_overlap = density_matrix_overlap(ls1, ls1)
-    print("Trace rho1^2 = {}".format(dm_overlap))
-    
-    dm_overlap = density_matrix_overlap(ls2, ls2)
-    print("Trace rho2^2 = {}".format(dm_overlap))
-
-    dm_overlap = density_matrix_overlap(ls1, ls2)
-    print("Trace rho1 rho2 = {}".format(dm_overlap))
-
-    # Testing a spesiffic result: (e.g. conin flips with different coins)
-    r1 = [{'HH': 10, 'TT': 10, 'HT': 0,  'TH': 0},
-          {'HH': 0,  'TT': 0,  'HT': 10, 'TH': 10},
-          {'HH': 10, 'TT': 10,  'HT': 0,  'TH': 0}]
-    
-    # Self correlation between different outcomes: probabilitis can be read off
-    assert _correlation(r1, r1, 'TH', 'HH') == 0, "Should be zero"
-    assert _correlation(r1, r1, 'HH', 'TT') < (.5**2 + 0 + .5**2)/3 + 0.00000001, "Should be 0.166666666666666 (inc.rounding error)"
-    
-    r2 = r1[:2]
-    r3 = [{'HH': 0, 'TT': 10, 'HT': 0, 'TH': 0},
-          {'HH': 10, 'TT': 0, 'HT': 0, 'TH': 0}]
-    
-    assert _correlation(r2, r3, 'HH', 'TT') == (.5 + 0)/2, "Should be (0.5*1 + 0*0)/2"
-    
-    r4 = [{'HH': 5, 'TT': 5, 'HT': 5, 'TH': 5},
-          {'HH': 5, 'TT': 5, 'HT': 5, 'TH': 5}]
-
-    c=0
-    for k1 in r3[0].keys():
-        for k2 in r3[0].keys():
-            c += _correlation(r3, r3, k1, k2)
-        
-    assert c == 1, "Totally ant-correlated and each indidual string has reduced entropy"
-
-    
-    
+    return np.array(tVec), np.array(er)
