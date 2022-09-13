@@ -108,16 +108,7 @@ def _unique_circ_name(circs):
     return circ_list
     
 
-def _print_names(circs):
-    """ Prints the names of all circuits in the input list
-    
-    Parameters
-    -------------
-    circs:
-        List of qiskit circuits
-    """
-    for c in circs:
-        print(c.name)
+
 
 
 
@@ -474,13 +465,16 @@ def TFIMandLF(circuit,
     circuit update (acts in place anyway)
 
     """
+    if time and dt:
+        raise ValueError('cannot have both time and dt set')
+    
     if not L:
         L = circuit.num_qubits
     if not qr:
         qr = circuit.qregs[0]
     if not dt:
         dt = time / steps
-    
+
 
     sites = range(L)
     order = []
@@ -508,7 +502,11 @@ def Simulator(name = 'qasm_simulator',
               shots = 2**13,
               optimization_level = 0):
     """ Returns a quantum instance simulator"""
-    backend = qk.Aer.get_backend(name=name)
+    if 'qasm' in name:
+        backend = qk.Aer.get_backend(name=name)
+    elif 'state' in name:
+        from qiskit.providers.aer import StatevectorSimulator
+        backend = StatevectorSimulator(precision='single')
     instance = qk.utils.QuantumInstance(backend=backend, 
                                         shots=shots, 
                                         optimization_level=optimization_level)
@@ -524,7 +522,8 @@ def patch_entropies(N,
                     steps = 10,
                     trotter_steps = 5,
                     nb_random = 20,
-                    seed = 42):
+                    seed = 42,
+                    shots=2**10):
     """
     Wrappre to be similar to Joe's scipy_entropy.patch_entropies code
 
@@ -562,13 +561,13 @@ def patch_entropies(N,
                        steps=trotter_steps,
                        J=J,
                        hx=hx,
-                       hz=0,
+                           hz=0,
                        time=time)
         # Add Harr random circs + simulate results
         circuits = append_random_unitaries(qc,
                                            nb_random=nb_random,
                                            seed=seed)
-        results = Simulator().execute(circuits=circuits)
+        results = Simulator(shots=shots).execute(circuits=circuits)
         # Calc entropy patches
         subsets_entropiesIDX = subsets_entropies(results,
                                                  qubit_index_sets=Patches)
