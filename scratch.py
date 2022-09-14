@@ -22,8 +22,8 @@ import scipy_entropy as se
 N = 6 #Chain length
 J = -1 #Ising coupling strength
 hx = -0.5 #transverese field strength
-t_max = 5 #max time
-steps = 5
+t_max = 5#max time
+steps = 10
 nb_random = 100
 trotter_steps = 5
 shots = 2**10
@@ -47,7 +47,8 @@ tVec, entropies = qe.patch_entropies(N,
                                      nb_random=nb_random,
                                      seed=None,
                                      shots=shots,
-                                     bitflip=bitflip)
+                                     bitflip=bitflip,
+                                     noise=[0.01,0.03])
 
 
 
@@ -66,7 +67,7 @@ times, results = se.patch_entropies(N=N,
                                     steps=steps,
                                     J=J,
                                     hx=hx,
-                                    bitflip=bitflip)   # returns the times and the purities for the patches.
+                                    bitflip=bitflip)    # returns the times and the purities for the patches.
 
 #%% Plotting on a fig
 plt.plot(times, results, alpha = 0.75)

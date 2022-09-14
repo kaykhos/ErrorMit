@@ -505,15 +505,25 @@ def TFIMandLF(circuit,
 
 def Simulator(name = 'qasm_simulator',
               shots = 2**13,
-              optimization_level = 0,):
+              optimization_level = 0,
+              noise = None):
     """ Returns a quantum instance simulator"""
     if 'qasm' in name:
         backend = qk.Aer.get_backend(name=name)
     elif 'state' in name:
         from qiskit.providers.aer import StatevectorSimulator
         backend = StatevectorSimulator(precision='single')
+    if noise:
+        error_1 = qk.providers.aer.noise.depolarizing_error(noise[0], 1)
+        error_2 = qk.providers.aer.noise.depolarizing_error(noise[1], 2)
+        noise_model = qk.providers.aer.noise.NoiseModel()
+        noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'sx', 'x','rx'])
+        noise_model.add_all_qubit_quantum_error(error_2, ['cx', 'cz'])
+    else:
+        noise_model = noise
     instance = qk.utils.QuantumInstance(backend=backend, 
                                         shots=shots, 
+                                        noise_model=noise_model,
                                         optimization_level=optimization_level)
     return instance
 
@@ -529,7 +539,8 @@ def patch_entropies(N,
                     nb_random = 20,
                     seed = 42,
                     shots=2**10,
-                    bitflip=None):
+                    bitflip=None,
+                    noise=None):
     """
     Wrapper to be similar to Joe's scipy_entropy.patch_entropies code
 
@@ -574,7 +585,8 @@ def patch_entropies(N,
         circuits = append_random_unitaries(qc,
                                            nb_random=nb_random,
                                            seed=seed)
-        results = Simulator(shots=shots).execute(circuits=circuits)
+        results = Simulator(shots=shots,
+                            noise=noise).execute(circuits=circuits)
         # Calc entropy patches
         subsets_entropiesIDX = subsets_entropies(results,
                                                  qubit_index_sets=Patches)
