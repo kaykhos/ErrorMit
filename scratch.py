@@ -27,9 +27,9 @@ steps = 10
 nb_random = 100
 trotter_steps = 5
 shots = 2**10
-bitflip = [2,3]
-start_end_sets = [[1,4],
-                  [2,5]] 
+bitflip = [N//2-1,N//2]
+start_end_sets = [[1,N//2],
+                  [N//2,N-1]] 
                   #[1,5],
                   #[2,6]]
 Patches = [list(range(tt[0], tt[1])) for tt in start_end_sets]
@@ -69,7 +69,7 @@ times, results = se.patch_entropies(N=N,
                                     hx=hx,
                                     bitflip=bitflip)    # returns the times and the purities for the patches.
 
-#%% Plotting on a fig
+#%% Plotting 
 plt.plot(times, results, alpha = 0.75)
 plt.plot(tVec, entropies15, '--', alpha = 0.5)
 plt.plot(tVec, entropies, '*', alpha = .75)
@@ -82,10 +82,9 @@ plt.show()
 
 
 
-#%% Basic use of qiskit_entropy
+#%% Break-out use of qiskit_entropy
 if False:
     nb_qubits = 6
-    
     # Create circuit
     circ1 = qk.QuantumCircuit(qk.QuantumRegister(nb_qubits, 'regs_1'), name='circ1')
     # Trotterised TFIM (defaults used)

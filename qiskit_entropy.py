@@ -566,10 +566,10 @@ def patch_entropies(N,
     tVec, entropies (for each patch)
     -------
     """
-    tVec = [0]
-    entropy_array = [[1]*len(Patches)]
-    for ct in range(steps):
-        time = t_max / steps * (ct + 1)
+    tVec = []
+    entropy_array = []
+    for ct in range(steps+1):
+        time = t_max / steps * (ct)
         tVec.append(time)
         
         # Make circuit
