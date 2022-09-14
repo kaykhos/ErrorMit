@@ -204,7 +204,7 @@ class SpinChainInitailState_Z:
 #############################################################################################################
 ############################################# Purities ######################################################
 #############################################################################################################
-
+    
 # A function to calculate the purity dynamics given a chain length, N, an Ising coupling strngth, J, a
 # transverese field strength, hx, a max time, t_max and a set of patches
 
@@ -213,9 +213,14 @@ def patch_entropies(N,
                     J = 1,
                     hx = 0.5,
                     t_max = 1,
-                    steps = 10):
-
-    state = [0]*N
+                    steps = 10, 
+                    bitflip = None):
+   
+    if bitflip:
+        bitflip = np.atleast_1d(bitflip)
+        state = [1 if ii in bitflip else 0 for ii in range(N)]    
+    else:
+        state = [0]*N
 
     # define the patches we are measuring.
     Patch_Basis = []
@@ -229,6 +234,7 @@ def patch_entropies(N,
 
     # Define Hamiltonian.
     H = SpinChainHamilonian(N)
+
 
     # Add Hamiltonian terms
     for n in range(N-1):

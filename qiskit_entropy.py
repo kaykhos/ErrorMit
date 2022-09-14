@@ -437,7 +437,8 @@ def TFIMandLF(circuit,
               time = 1,
               dt = None,
               L = None,
-              qr = None):
+              qr = None,
+              bitflip = None):
     """
     Parameters
     ----------
@@ -468,6 +469,10 @@ def TFIMandLF(circuit,
     if time and dt:
         raise ValueError('cannot have both time and dt set')
     
+    if bitflip:
+        bitflip = np.atleast_1d(bitflip)
+        for qubit in bitflip:
+            circuit.x(qubit)
     if not L:
         L = circuit.num_qubits
     if not qr:
@@ -500,7 +505,7 @@ def TFIMandLF(circuit,
 
 def Simulator(name = 'qasm_simulator',
               shots = 2**13,
-              optimization_level = 0):
+              optimization_level = 0,):
     """ Returns a quantum instance simulator"""
     if 'qasm' in name:
         backend = qk.Aer.get_backend(name=name)
@@ -523,9 +528,10 @@ def patch_entropies(N,
                     trotter_steps = 5,
                     nb_random = 20,
                     seed = 42,
-                    shots=2**10):
+                    shots=2**10,
+                    bitflip=None):
     """
-    Wrappre to be similar to Joe's scipy_entropy.patch_entropies code
+    Wrapper to be similar to Joe's scipy_entropy.patch_entropies code
 
     Parameters
     ----------
@@ -561,8 +567,9 @@ def patch_entropies(N,
                        steps=trotter_steps,
                        J=J,
                        hx=hx,
-                           hz=0,
-                       time=time)
+                       hz=0,
+                       time=time,
+                       bitflip=bitflip)
         # Add Harr random circs + simulate results
         circuits = append_random_unitaries(qc,
                                            nb_random=nb_random,
@@ -617,7 +624,8 @@ def circuit_patch_entropies(N,
                            hx = 0,
                            t_max = 1,
                            steps = 10,
-                           trotter_steps = 5):
+                           trotter_steps = 5,
+                           bitflip = None):
     """
     Trotterised DM purities for given patches
 
@@ -659,7 +667,8 @@ def circuit_patch_entropies(N,
                        J=J,
                        hx=hx,
                        hz=0,
-                       time=time)
+                       time=time,
+                       bitflip=bitflip)
         tmp = _exact_circuit_purity_helper(qc, 
                                            Patches=Patches,
                                            include=True)
